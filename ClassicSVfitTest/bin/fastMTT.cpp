@@ -7,37 +7,16 @@
 #include "TTree.h"
 #include "UserCode/ICHiggsTauTau/interface/Candidate.hh"
 #include "UserCode/ICHiggsTauTau/interface/Met.hh"
-#include "TauAnalysis/ClassicSVfit/interface/ClassicSVfit.h"
 #include "TauAnalysis/ClassicSVfit/interface/MeasuredTauLepton.h"
-#include "TauAnalysis/ClassicSVfit/interface/svFitHistogramAdapter.h"
 #include "TSystem.h"
 #include "PhysicsTools/FWLite/interface/TFileService.h"
+#include "TauAnalysis/ClassicSVfit/interface/FastMTT.h"
 
 using namespace classic_svFit;
 
 int main(int argc, char* argv[]){
 
-  if (argc !=2 && argc != 3 && argc !=4){
-    std::cerr << "Need 1,2 or 3 args: <input> <file_prefix> (--M=<mass_constraint>)" << std::endl;
-    exit(1);
-  }
-
   std::string file_prefix = "";
-  double mass_constraint = -1;
-  bool constrainM = false;
-  if(argc==3){
-    std::string arg = argv[2];
-    if(arg.find("--M=") != std::string::npos){
-     constrainM = true;
-     mass_constraint=std::stod(arg.erase(0,4));
-    } else file_prefix = argv[2];
-  }
-  if(argc==4){
-    file_prefix = argv[2];
-    constrainM = true;
-    std::string arg = argv[3];
-    if(arg.find("--M=") != std::string::npos) mass_constraint=std::stod(arg.erase(0,4));
-  }
 
   std::string input_file = argv[1];
   std::string output_file = input_file;
@@ -71,9 +50,7 @@ int main(int argc, char* argv[]){
   int dm1 = -1;
   int dm2 = -1;
   double svfit_mass;
-  double svfit_mass_err;
   double svfit_transverse_mass;
-  double svfit_transverse_mass_err;
   ic::Candidate *svfit_vector = NULL;
 
   TH1::AddDirectory(kFALSE);
@@ -96,9 +73,7 @@ int main(int argc, char* argv[]){
   otree->Branch("run", &run, "run/i");
   otree->Branch("objects_hash", &objects_hash, "objects_hash/l");
   otree->Branch("svfit_mass", &svfit_mass);
-  otree->Branch("svfit_mass_err", &svfit_mass_err);
-  otree->Branch("svfit_transverse_mass", &svfit_transverse_mass);
-  otree->Branch("svfit_transverse_mass_err", &svfit_transverse_mass_err);
+  otree->Branch("svfit_transverse_mass", &svfit_transverse_mass); //not filled
   otree->Branch("svfit_vector", &svfit_vector);
   
   for (unsigned i = 0; i < itree->GetEntries(); ++i) {
@@ -116,60 +91,40 @@ int main(int argc, char* argv[]){
     covMET(0,1) = met->xy_sig();
     covMET(1,1) = met->yy_sig();
 
-    double kappa = 5.;
-
     std::vector<MeasuredTauLepton> measuredTauLeptons;
     if (mode == 0) {
       measuredTauLeptons.push_back(MeasuredTauLepton(MeasuredTauLepton::kTauToMuDecay, c1->pt(), c1->eta(), c1->phi(), 0.10566)); 
       measuredTauLeptons.push_back(MeasuredTauLepton(MeasuredTauLepton::kTauToHadDecay,  c2->pt(), c2->eta(), c2->phi(), c2->M(), dm2));         
-      kappa = 4.;
     } else if (mode == 1){
       measuredTauLeptons.push_back(MeasuredTauLepton(MeasuredTauLepton::kTauToElecDecay, c1->pt(), c1->eta(), c1->phi(), 0.000511));
       measuredTauLeptons.push_back(MeasuredTauLepton(MeasuredTauLepton::kTauToMuDecay, c2->pt(), c2->eta(), c2->phi(), 0.10566));
-      kappa = 3.;
     } else if (mode == 2){
       measuredTauLeptons.push_back(MeasuredTauLepton(MeasuredTauLepton::kTauToElecDecay, c1->pt(), c1->eta(), c1->phi(), 0.000511));
       measuredTauLeptons.push_back(MeasuredTauLepton(MeasuredTauLepton::kTauToHadDecay,  c2->pt(), c2->eta(), c2->phi(), c2->M(), dm2));
-      kappa = 4.;
     } else if (mode == 3){
       measuredTauLeptons.push_back(MeasuredTauLepton(MeasuredTauLepton::kTauToHadDecay,  c1->pt(), c1->eta(), c1->phi(), c1->M(), dm1));
       measuredTauLeptons.push_back(MeasuredTauLepton(MeasuredTauLepton::kTauToHadDecay,  c2->pt(), c2->eta(), c2->phi(), c2->M(), dm2));
-      kappa = 5.;
     } else{
       std::cout<<"Mode "<<mode<<" not valid"<<std::endl;
       exit(1);
     }
 
-    int verbosity = 0;
-    ClassicSVfit svFitAlgo(verbosity);
-    svFitAlgo.addLogM_fixed(true, kappa);
-    // add constrain on mass if option is specified
-    if(constrainM) svFitAlgo.setDiTauMassConstraint(mass_constraint);
-    svFitAlgo.integrate(measuredTauLeptons, measuredMETx, measuredMETy, covMET);
-    bool isValidSolution = svFitAlgo.isValidSolution();
+    //Run FastMTT
+    FastMTT aFastMTTAlgo;
+    aFastMTTAlgo.run(measuredTauLeptons, measuredMETx, measuredMETy, covMET);
+    LorentzVector ttP4 = aFastMTTAlgo.getBestP4();
+    std::cout << "FastMTT found best p4 with mass = " << ttP4.M()
+          <<std::endl;
 
-    if (isValidSolution){
-      svfit_mass = static_cast<DiTauSystemHistogramAdapter*>(svFitAlgo.getHistogramAdapter())->getMass();
-      svfit_mass_err = static_cast<DiTauSystemHistogramAdapter*>(svFitAlgo.getHistogramAdapter())->getMassErr();
-      svfit_transverse_mass = static_cast<DiTauSystemHistogramAdapter*>(svFitAlgo.getHistogramAdapter())->getTransverseMass();
-      svfit_transverse_mass_err = static_cast<DiTauSystemHistogramAdapter*>(svFitAlgo.getHistogramAdapter())->getTransverseMassErr();
-      svfit_vector->set_vector(
-          (ROOT::Math::PtEtaPhiEVector) ROOT::Math::PtEtaPhiMVector(
-            static_cast<DiTauSystemHistogramAdapter*>(svFitAlgo.getHistogramAdapter())->getPt(),
-            static_cast<DiTauSystemHistogramAdapter*>(svFitAlgo.getHistogramAdapter())->getEta(),
-            static_cast<DiTauSystemHistogramAdapter*>(svFitAlgo.getHistogramAdapter())->getPhi(),
-            svfit_mass
-            ));
-    } else {
-      svfit_mass = -1;
-      svfit_mass_err = -1;
-      svfit_transverse_mass = -1;
-      svfit_transverse_mass_err = -1;
-    }
+    svfit_mass = ttP4.M();    
+    svfit_vector->set_vector(
+            (ROOT::Math::PtEtaPhiEVector) ROOT::Math::PtEtaPhiMVector(
+                ttP4.Pt(), ttP4.Eta(), ttP4.Phi(), ttP4.M()
+                ));
     svfit_vector->set_id(objects_hash);
-    std::cout << "Mass: " << svfit_mass << "\tVector Mass: " << svfit_vector->M() << "\tVector pT: " << svfit_vector->pt() << std::endl;
     otree->Fill();
   }
+
   output->Write();
   delete otree;
   output->Close();
@@ -179,8 +134,8 @@ int main(int argc, char* argv[]){
   delete input;
 
   return 0;
+  
 }
-
 
 
 

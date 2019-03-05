@@ -1,4 +1,5 @@
-<bin file="ClassicSVFitTest.cpp" name="ClassicSVFitTest">
+<bin file="ClassicSVFitTest.cpp" name="ClassicSVFitTest"></bin>
+<bin file="fastMTT.cpp" name="fastMTT"></bin>
 <use name="root"/>
 <use name="rootmath"/>
 <use name="roofit"/>
@@ -16,5 +17,4 @@
 <use name="TauAnalysis/ClassicSVfit"/>
 <use name="TauAnalysis/SVfitTF"/>
 <Flags CPPDEFINES="USE_SVFITTF"/>
-</bin>
 
