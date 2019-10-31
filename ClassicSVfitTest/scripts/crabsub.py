@@ -86,6 +86,7 @@ for filename in os.listdir(root) :
 outscript.write(CRAB_POSTFIX)
 outscript.close()
 
+exit()
 from ICSVFit.ClassicSVfitTest.crab import config
 config.General.requestName = task_name
 config.JobType.scriptExe = outscriptname
