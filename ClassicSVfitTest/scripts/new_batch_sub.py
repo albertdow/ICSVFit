@@ -39,7 +39,7 @@ parser.add_option("--channels", dest="channels", default='em,et,mt,tt',
 parser.add_option("--year", dest="year", default=2017,
                   help="Which year to run for")
 parser.add_option("--algo", dest="algo", default='fastMTT',
-                  help="Which algorithm to use")
+                  help="Which algorithm to use: [ClassicSVFitTest, fastMTT]")
 
 
 (options, args) = parser.parse_args()
@@ -53,13 +53,13 @@ filesSeen = 0
 filesVerified = 0
 
 # files = ["TTToSemiLeptonic","DYJetsToLL-LO-ext1"]
+# files = ["DY1JetsToLL-LO-ext"]
 # runFiles = ["svfit_{}_{}_{}_input.root".format(x, options.channels, options.year) for x in files]
-runFiles = ['svfit_GluGluHToTauTau_M-125-ext_mt_2017_input.root', 'svfit_EmbeddingMuTauE_mt_2017_input.root', 'svfit_DYJetsToLL-LO_mt_2017_input.root', 'svfit_GluGluToPseudoscalarHToTauTauPlusTwoJets_M125_amcatnloFXFX_mt_2017_input.root', 'svfit_W3JetsToLNu-LO_mt_2017_input.root', 'svfit_WZTo3LNu_mt_2017_input.root', 'svfit_TTToSemiLeptonic_mt_2017_input.root', 'svfit_EmbeddingMuTauD_mt_2017_input.root', 'svfit_WplusHToTauTau_M-125_mt_2017_input.root','svfit_WZTo1L1Nu2Q_mt_2017_input.root', 'svfit_EmbeddingMuTauC_mt_2017_input.root', 'svfit_W4JetsToLNu-LO_mt_2017_input.root', 'svfit_ZHToTauTau_M-125_mt_2017_input.root', 'svfit_GluGluToHToTauTauPlusTwoJets_M125_amcatnloFXFX_mt_2017_input.root', 'svfit_T-tW_mt_2017_input.root', 'svfit_Tbar-tW_mt_2017_input.root', 'svfit_EmbeddingMuTauF_mt_2017_input.root', 'svfit_WminusHToTauTau_M-125_mt_2017_input.root', 'svfit_TTTo2L2Nu_mt_2017_input.root','svfit_WZTo2L2Q_mt_2017_input.root', 'svfit_WWToLNuQQ-ext_mt_2017_input.root', 'svfit_ZZTo4L-ext_mt_2017_input.root', 'svfit_DY1JetsToLL-LO_mt_2017_input.root', 'svfit_ZZTo2L2Q_mt_2017_input.root', 'svfit_GluGluToMaxmixHToTauTauPlusTwoJets_M125_amcatnloFXFX_mt_2017_input.root', 'svfit_EmbeddingMuTauB_mt_2017_input.root', 'svfit_WWToLNuQQ_mt_2017_input.root', 'svfit_DYJetsToLL-ext_mt_2017_input.root']
-runFiles.extend(["svfit_SingleMuonB_mt_2017_input.root","svfit_SingleMuonC_mt_2017_input.root","svfit_SingleMuonD_mt_2017_input.root","svfit_SingleMuonE_mt_2017_input.root","svfit_SingleMuonF_mt_2017_input.root"])
+# runFiles = ['svfit_GluGluHToTauTau_M-125-ext_mt_2017_output.root', 'svfit_DYJetsToLL-LO_mt_2017_output.root', 'svfit_EmbeddingMuTauE_mt_2017_output.root', 'svfit_GluGluToPseudoscalarHToTauTauPlusTwoJets_M125_amcatnloFXFX_mt_2017_output.root', 'svfit_W3JetsToLNu-LO_mt_2017_output.root', 'svfit_WplusHToTauTau_M-125_mt_2017_output.root', 'svfit_EmbeddingMuTauD_mt_2017_output.root', 'svfit_SingleMuonF_mt_2017_output.root','svfit_EmbeddingMuTauC_mt_2017_output.root', 'svfit_SingleMuonC_mt_2017_output.root', 'svfit_TTToSemiLeptonic_mt_2017_output.root', 'svfit_WZTo1L1Nu2Q_mt_2017_output.root', 'svfit_WZTo3LNu_mt_2017_output.root', 'svfit_W4JetsToLNu-LO_mt_2017_output.root', 'svfit_GluGluToHToTauTauPlusTwoJets_M125_amcatnloFXFX_mt_2017_output.root', 'svfit_ZHToTauTau_M-125_mt_2017_output.root', 'svfit_T-tW_mt_2017_output.root', 'svfit_EmbeddingMuTauF_mt_2017_output.root','svfit_Tbar-tW_mt_2017_output.root', 'svfit_WminusHToTauTau_M-125_mt_2017_output.root', 'svfit_TTTo2L2Nu_mt_2017_output.root', 'svfit_WZTo2L2Q_mt_2017_output.root', 'svfit_DY1JetsToLL-LO_mt_2017_output.root', 'svfit_SingleMuonB_mt_2017_output.root', 'svfit_SingleMuonD_mt_2017_output.root', 'svfit_WWToLNuQQ-ext_mt_2017_output.root', 'svfit_ZZTo4L-ext_mt_2017_output.root', 'svfit_GluGluToMaxmixHToTauTauPlusTwoJets_M125_amcatnloFXFX_mt_2017_output.root','svfit_ZZTo2L2Q_mt_2017_output.root', 'svfit_EmbeddingMuTauB_mt_2017_output.root', 'svfit_SingleMuonE_mt_2017_output.root', 'svfit_WWToLNuQQ_mt_2017_output.root', 'svfit_DYJetsToLL-ext_mt_2017_output.root']
 
 for root, dirnames, filenames in os.walk(options.input):
     for filename in fnmatch.filter(filenames, '*svfit_*_{}_input.root'.format(options.year)):
-        if filename not in runFiles: continue
+        # if filename not in runFiles: continue
         if not any('_'+chan+'_' in filename for chan in channels): continue
         fullfile = os.path.join(root, filename)
         outfile = fullfile.replace('input.root','output.root')
