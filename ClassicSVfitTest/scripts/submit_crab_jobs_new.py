@@ -24,6 +24,7 @@ parser.add_option("--crab", dest = "crab", default='SVFit_output',
                   help="Name of crab task")
 parser.add_option("--algo", default='fastMTT',
                   help="fastMTT or ClassicSVFitTest")
+parser.add_option("--era", help="What year?")
 
 (options,args) = parser.parse_args()
 
@@ -64,12 +65,12 @@ for subdir in subdirs:
     os.system('python scripts/copy_svfit_input_files_to_dcache.py -i %s -d %s --checkExists' % (folder,dcache_dir)) 
   
   # check if all the inputs are on the dcache before submitting
-  try: check_dcache = subprocess.check_output("xrd gfe02.grid.hep.ph.ic.ac.uk:1097 ls %s | grep input | grep .root" % dcache_dir, shell=True).split('\n')
-  except: check_dcache = []
-  try: check_dir = subprocess.check_output("ls %s/ | grep input.root" % folder, shell=True).split('\n')
-  except: check_dir = []
-  check_dir = [x for x in check_dir if '.root' in x and 'input' in x]
-  check_dcache = [x for x in check_dcache if '.root' in x and 'input' in x]
+  # try: check_dcache = subprocess.check_output("xrd gfe02.grid.hep.ph.ic.ac.uk:1097 ls %s | grep input | grep .root" % dcache_dir, shell=True).split('\n')
+  # except: check_dcache = []
+  # try: check_dir = subprocess.check_output("ls %s/ | grep input.root" % folder, shell=True).split('\n')
+  # except: check_dir = []
+  # check_dir = [x for x in check_dir if '.root' in x and 'input' in x]
+  # check_dcache = [x for x in check_dcache if '.root' in x and 'input' in x]
 
   # print  len(check_dcache), len(check_dir) 
   # if len(check_dcache) != len(check_dir): 
@@ -81,5 +82,5 @@ for subdir in subdirs:
   dcache_dir = 'root://gfe02.grid.hep.ph.ic.ac.uk:1097/%s/%s/' % (options.dcache_dir,subdir)
   name = '%s%s' % (CRAB,subdir)
 
-  submit_command = './scripts/crabsub_new.py -i %s --name %s --area %s --file_prefix %s %s --algo %s ' % (folder,name,CRAB,dcache_dir, mass_constraint,options.algo)
+  submit_command = './scripts/crabsub_new.py -i %s --name %s --area %s --file_prefix %s %s --algo %s --era %s' % (folder,name,CRAB,dcache_dir, mass_constraint,options.algo,options.era)
   os.system(submit_command)

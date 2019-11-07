@@ -56,6 +56,7 @@ parser.add_option("--file_prefix", dest="file_prefix",
 parser.add_option("--M", dest = "M", default="",
                   help="If specified hard constrain the di-tau mass by set value.")
 parser.add_option("--algo", help="ClassicSVFitTest or fastMTT?")
+parser.add_option("--era", help="What year?")
 
 
 (options, args) = parser.parse_args()
@@ -77,7 +78,7 @@ svfit_files=set()
 root = options.input
 
 for filename in os.listdir(root) :
-  if fnmatch.fnmatch(filename, 'svfit_*_input.root'):
+  if fnmatch.fnmatch(filename, 'svfit_*_{}_input.root'.format(options.era)):
     fullfile = os.path.join(root, filename)
     nperjob=50000
     '--npercall_offset='
@@ -103,6 +104,10 @@ outscript.close()
 from ICSVFit.ClassicSVfitTest.crab import config
 config.General.requestName = task_name
 config.JobType.scriptExe = outscriptname
+config.JobType.inputFiles = [
+    "{}/src/ICSVFit/ClassicSVfitTest/scripts/FrameworkJobReport.xml".format(os.environ["CMSSW_BASE"]),
+    "{}/bin/{}/{}".format(os.environ["CMSSW_BASE"],os.environ["SCRAM_ARCH"],options.algo)
+    ]
 #config.JobType.inputFiles.extend(svfit_files)
 config.Data.totalUnits = jobs
 config.Data.outputDatasetTag= config.General.requestName
