@@ -22,6 +22,8 @@ parser.add_option("--M", dest = "M", default="",
                   help="If specified hard constrain the di-tau mass by set value.")
 parser.add_option("--crab", dest = "crab", default='SVFit_output',
                   help="Name of crab task")
+parser.add_option("--algo", default='fastMTT',
+                  help="fastMTT or ClassicSVFitTest")
 
 (options,args) = parser.parse_args()
 
@@ -79,5 +81,5 @@ for subdir in subdirs:
   dcache_dir = 'root://gfe02.grid.hep.ph.ic.ac.uk:1097/%s/%s/' % (options.dcache_dir,subdir)
   name = '%s%s' % (CRAB,subdir)
 
-  submit_command = './scripts/crabsub_new.py -i %s --name %s --area %s --file_prefix %s %s' % (folder,name,CRAB,dcache_dir, mass_constraint)
+  submit_command = './scripts/crabsub_new.py -i %s --name %s --area %s --file_prefix %s %s --algo %s ' % (folder,name,CRAB,dcache_dir, mass_constraint,options.algo)
   os.system(submit_command)

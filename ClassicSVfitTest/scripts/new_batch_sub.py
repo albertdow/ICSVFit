@@ -21,6 +21,17 @@ if "JOBSUBMIT"  in os.environ: JOBSUBMIT  = os.environ["JOBSUBMIT"]
 print "Using job-wrapper:    " + JOBWRAPPER
 print "Using job-submission: " + JOBSUBMIT
 
+CONDOR_TEMPLATE = """executable = %(EXE)s
+Proxy_path =/afs/cern.ch/user/a/adow/private/x509up
+arguments = $(Proxy_path)
+output                = /dev/null
+error                 = /dev/null
+log                   = %(TASK)s.$(ClusterId).log
+requirements = (OpSysAndVer =?= "SLCern6")
++JobFlavour     = "longlunch"
+queue
+"""
+
 parser = OptionParser()
 parser.add_option("--jobwrap", dest="wrap",
                   help="Specify the job-wrapper script. The current wrapper is '%(JOBWRAPPER)s'."
@@ -40,6 +51,8 @@ parser.add_option("--year", dest="year", default=2017,
                   help="Which year to run for")
 parser.add_option("--algo", dest="algo", default='fastMTT',
                   help="Which algorithm to use: [ClassicSVFitTest, fastMTT]")
+parser.add_option("--condor", action='store_true', default=False,
+                  help="Submit jobs to condor (for lxplus)")
 
 
 (options, args) = parser.parse_args()
@@ -48,6 +61,7 @@ channels = options.channels.split(',')
 
 if options.wrap: JOBWRAPPER=options.wrap
 if options.sub: JOBSUBMIT=options.sub
+if options.condor: JOBWRAPPER = "./scripts/generate_condor_job.sh"
 
 filesSeen = 0
 filesVerified = 0
@@ -91,7 +105,25 @@ for root, dirnames, filenames in os.walk(options.input):
         if submitTask and options.submit:
             job = fullfile.replace('_input.root','.sh')
             os.system('{} "{} {}" {}'.format(JOBWRAPPER,options.algo,fullfile,job))
-            os.system('{} {}'.format(options.sub, job))
+            if not options.condor:
+                os.system('{} {}'.format(options.sub, job))
+            else:
+                os.system('{} "{} {}" {}'.format(JOBWRAPPER,options.algo,fullfile,job))
+                job = fullfile.replace('_input.root','')
+                jobname = os.path.basename(job).replace("svfit_","")
+                print(job)
+                outscriptname = '{}.sh'.format(job)
+                subfilename = '{}.sub'.format(job)
+                subfile = open("{}".format(subfilename), "w")
+                condor_settings = CONDOR_TEMPLATE % {
+                  'EXE': outscriptname,
+                  'TASK': "{}".format(job)
+                }
+                subfile.write(condor_settings)
+                subfile.close()
+                os.system('condor_submit {}'.format(subfilename))
+                # print('condor_submit {}'.format(subfilename))
+
 
 print 'TOTAL SVFit FILES:    '+str(filesSeen)
 print 'VERIFIED SVFit FILES: '+str(filesVerified)
