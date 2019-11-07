@@ -41,7 +41,7 @@ EOF
 trap 'error_exit $?' ERR
 """
 CRAB_POSTFIX="""
-tar -cf svfit_output.tar svfit_*_output.root
+tar -czf svfit_output.tgz svfit_*_output.root
 rm svfit_*_output.root
 """
 parser = OptionParser()
@@ -55,6 +55,7 @@ parser.add_option("--file_prefix", dest="file_prefix",
                     help="Location of input files")
 parser.add_option("--M", dest = "M", default="",
                   help="If specified hard constrain the di-tau mass by set value.")
+parser.add_option("--algo", help="ClassicSVFitTest or fastMTT?")
 
 
 (options, args) = parser.parse_args()
@@ -94,7 +95,7 @@ for filename in os.listdir(root) :
       svfit_files.add(fullfile)
       outfile = fullfile.replace('input.root','output.root')
       outscript.write('\nif [ $1 -eq %i ]; then\n'%jobs)
-      outscript.write("  ./ClassicSVFitTest " +os.path.basename(fullfile) + " " + options.file_prefix + " "+ s +'\n')
+      outscript.write(" {} ".format(options.algo) +os.path.basename(fullfile) + " " + options.file_prefix + " "+ s +'\n')
       outscript.write('fi')
 outscript.write(CRAB_POSTFIX)
 outscript.close()
@@ -105,6 +106,7 @@ config.JobType.scriptExe = outscriptname
 #config.JobType.inputFiles.extend(svfit_files)
 config.Data.totalUnits = jobs
 config.Data.outputDatasetTag= config.General.requestName
+print(config)
 if crab_area is not None:
   config.General.workArea = crab_area
 if not DRY_RUN:

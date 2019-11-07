@@ -12,11 +12,39 @@
 #include "PhysicsTools/FWLite/interface/TFileService.h"
 #include "TauAnalysis/ClassicSVfit/interface/FastMTT.h"
 
+std::pair<double,double> SplitString(std::string instring){
+    std::vector<std::string> outstrings;
+    std::stringstream ss(instring);
+    std::string splitstring;
+    while(std::getline(ss, splitstring, ',')) outstrings.push_back(splitstring); 
+    return std::make_pair(std::stod(outstrings[0]),std::stod(outstrings[1]));
+}
+
 using namespace classic_svFit;
 
 int main(int argc, char* argv[]){
 
   std::string file_prefix = "";
+
+  int npercall=-1;
+  int offset=-1;
+  if(argc==3){
+    std::string arg = argv[2];
+    if(arg.find("--npercall_offset=") != std::string::npos){
+     std::pair<double,double> nper_offset = SplitString(arg.erase(0,18));
+     npercall = (int) nper_offset.first;
+     offset = (int) nper_offset.second;
+    } else file_prefix = argv[2];
+  }
+  if(argc==4){
+    file_prefix = argv[2];
+    std::string arg = argv[3];
+    if(arg.find("--npercall_offset=") != std::string::npos) {
+      std::pair<double,double> nper_offset = SplitString(arg.erase(0,18));
+      npercall = (int) nper_offset.first;
+      offset = (int) nper_offset.second;
+    }
+  }
 
   std::string input_file = argv[1];
   std::string output_file = input_file;
@@ -38,6 +66,25 @@ int main(int argc, char* argv[]){
     std::cerr << "The input tree could not be found" << std::endl;
     return 1;
   }
+
+  if (argc !=2 && argc != 3 && argc != 4){
+    //std::cerr << "Need 1,2 args: <input> <file_prefix> " << std::endl;
+    std::cerr << "Need 1,2 args: <input> <file_prefix> " << std::endl;
+    exit(1);
+  }
+
+  unsigned mini=0;
+  unsigned maxi=itree->GetEntries();
+
+  if(npercall>-1 && offset>-1){
+    mini=npercall*offset;
+    maxi=npercall*(offset+1);
+    maxi = maxi > itree->GetEntries() ? itree->GetEntries() : maxi;
+    std::size_t pos = output_file.find("output.root"); 
+    output_file.replace(pos, std::string("output.root").length(), std::to_string(offset)+"_output.root"); 
+  }
+
+  if (mini > itree->GetEntries()) return 0;
 
   ic::Candidate *c1 = NULL;
   ic::Candidate *c2 = NULL;
