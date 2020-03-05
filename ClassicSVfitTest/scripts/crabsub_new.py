@@ -66,6 +66,8 @@ if options.M != '': mass_constraint = '--M=%s' % options.M
 
 from CRABAPI.RawCommand import crabCommand
 from httplib import HTTPException
+from CRABClient.ClientExceptions import ClientException
+
 print '>> crab3 requestName will be %s' %task_name
 outscriptname = 'crab_%s.sh' %task_name
 print '>> crab3 script will be %s' %outscriptname
@@ -76,7 +78,7 @@ svfit_files=set()
 root = options.input
 
 for filename in os.listdir(root) :
-  if fnmatch.fnmatch(filename, 'svfit_*_input.root'):
+  if fnmatch.fnmatch(filename, 'svfit_*_2017_input.root'):
     fullfile = os.path.join(root, filename)
     nperjob=50000
     '--npercall_offset='
@@ -112,3 +114,5 @@ if not DRY_RUN:
     crabCommand('submit', config=config)
   except HTTPException, hte:
     print hte.headers
+  except ClientException as cle:
+    print cle
